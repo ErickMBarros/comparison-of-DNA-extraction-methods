@@ -1,0 +1,85 @@
+#diversity indexes
+##the dataset must contain number of OTUs in the rows and number of samples in the columns
+###the dataset must be in relative abundance or total abundance
+
+###Richness, alpha-diversity and evenness###
+
+library(BiodiversityR)
+setwd("C:/path/to/your/dataset")
+
+x=read.delim("your_dataset.txt", row.names = 1)
+
+##transpose
+x=t(x)
+
+#Richness index
+### "each site" for alfa-diversity; "pooled" for gamma-diversity
+x1=diversityresult(x, y=NULL, level = NULL, factor = NULL,index = "richness", method = "each site", sortit = FALSE, digits = 5)
+x1.2=diversityresult(x, y=NULL, level = NULL, factor = NULL,index = "richness", method = "pooled", sortit = FALSE, digits = 5)
+
+#Alpha-diversity indexes
+## "Shannon" for Shannon' index; "Simpson" for Simpson index
+### "each site" for alfa-diversity; "pooled" for gamma-diversity
+x2=diversityresult(x, y=NULL, level = NULL, factor = NULL,index = "Shannon", method = "each site", sortit = FALSE, digits = 5)
+x3=diversityresult(x, y=NULL, level = NULL, factor = NULL,index = "Simpson", method = "each site", sortit = FALSE, digits = 5)
+
+#evenness indexes
+## "Jevenness" for Pielou' index; "Eevenness" for Hill' index
+### "each site" for alfa-diversity; "pooled" for gamma-diversity 
+x4=diversityresult(x, y=NULL, level = NULL, factor = NULL,index = "Jevenness", method = "each site", sortit = FALSE, digits = 5)
+x5=diversityresult(x, y=NULL, level = NULL, factor = NULL,index = "Eevenness", method = "each site", sortit = FALSE, digits = 5)
+
+#to merge results into one data table
+##these steps are optional
+result=merge(x1,x2,0,all = TRUE)
+row.names(result)=result$Row.names
+result=result[,-1]
+
+result=merge(result,x3,0,all = TRUE)
+row.names(result)=result$Row.names
+result=result[,-1]
+
+result=merge(result,x4,0,all = TRUE)
+row.names(result)=result$Row.names
+result=result[,-1]
+
+result=merge(result,x5,0,all = TRUE)
+row.names(result)=result$Row.names
+result=result[,-1]
+
+#To save the data table into selected path
+write.table(result, "your_output_dataset.txt")
+
+
+###Beta-diversity, turnover and nestedness###
+
+library(vegan)
+library(betapart)
+setwd("C:/path/to/your/dataset")
+
+x=read.table(file="your_dataset.txt", row.names=1, sep="\t", header=T, dec=".", na.strings="NA")
+
+#Transform into presence/absence data and transpose
+x=decostand(x, "pa")
+x=t(x)
+
+#beta-deiversity index
+### "beta.pair" for beta-diversity; "beta.multi" for gamma-diversity
+
+beta.multi=beta.multi(x, index.family="sorensen")
+beta.pair=beta.pair(x, index.family = "sorensen")
+
+#to transform the results (data.frame) into data table
+nestedness <- data.frame(t(combn(rownames(x),2)), as.numeric(beta.pair$beta.sne))
+names(nestedness) <- c("c1", "c2", "nestedness")
+
+turnover <- data.frame(t(combn(rownames(x),2)), as.numeric(beta.pair$beta.sim))
+names(turnover) <- c("c1", "c2", "turnover")
+
+dissimilarity <- data.frame(t(combn(rownames(x),2)), as.numeric(beta.pair$beta.sor))
+names(dissimilarity) <- c("c1", "c2", "dissimilarity")
+
+#To save the data table into selected path
+write.table(dissimilarity,"your_output_b-diversity_dataset.txt")
+write.table(nestedness,"your_output__nestedness_dataset.txt")
+write.table(turnover,"your_output_turnover_dataset.txt")
