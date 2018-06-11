@@ -12,19 +12,19 @@ setwd ("C:/path/to/your/dataset")
 
 #PERMANOVA
 otu_table=read.table(file.choose(), row.names=1, sep="\t", header=T, dec=".", na.strings="NA") #otu table
-mapa=read.table(file.choose(), row.names=1, header=T) #environmental variables 
+map=read.table(file.choose(), row.names=1, header=T) #environmental variables 
 otu<-t(otu_table)
 
-table_merge=merge(otu, mapa, by.x="row.names", by.y="row.names")
+table_merge=merge(otu, map, by.x="row.names", by.y="row.names")
 rownames(table_merge)=table_merge[,1]
 dim(table_merge) #show thetable size
 a=dim(table_merge)[2]
 otu_table2 = table_merge[,2:3235] 
-mapa2 = table_merge[,3236:a]
-mapa2 = as.data.frame(mapa2)
-rownames(mapa2)=table_merge[,1]
-colnames(mapa2)="metodo"
-rownames(otu_table2)==rownames(mapa2)
+map2 = table_merge[,3236:a]
+map2 = as.data.frame(mapa2)
+rownames(map2)=table_merge[,1]
+colnames(map2)="metodo"
+rownames(otu_table2)==rownames(map2)
 
 #PERMANOVA = identifies the major responsible for data variation
 adonis(formula = otu_table2 ~ metodo, data=mapa2, permutations=10000, method="bray")
@@ -40,9 +40,9 @@ plot(beta_dist_site)
 ord_otu = metaMDS(otu_table2, dist="bray", k=2, trymax=200, autotransform=FALSE, noshare=FALSE, wascores=FALSE)
 ord_otu$stress
 nmds_score = scores(ord_otu)
-mapa_dist = merge(mapa2, nmds_score, by.x="row.names", by.y="row.names")
+map_dist = merge(mapa2, nmds_score, by.x="row.names", by.y="row.names")
 table_merge2=merge(nmds_score, mapa2, by.x="row.names", by.y="row.names")
 
-metodo= factor(mapa2$metodo)
-g<-ggplot(mapa_dist, aes(NMDS1, NMDS2)) + geom_point(aes(color = metodo, shape=metodo), size=3) +  scale_shape_manual(values=c(16,21,17,3,8)) + scale_color_manual(values=c("darkorchid3","dodgerblue3", "darkolivegreen4", "rosybrown4", "darkgoldenrod1"))+ geom_polygon(data=table_merge2,aes(x=NMDS1,y=NMDS2,fill=metodo,group=metodo),alpha=0.3)
+method= factor(map2$method)
+g<-ggplot(mapa_dist, aes(NMDS1, NMDS2)) + geom_point(aes(color = method, shape=method), size=3) +  scale_shape_manual(values=c(16,21,17,3,8)) + scale_color_manual(values=c("darkorchid3","dodgerblue3", "darkolivegreen4", "rosybrown4", "darkgoldenrod1"))+ geom_polygon(data=table_merge2,aes(x=NMDS1,y=NMDS2,fill=metodo,group=method),alpha=0.3)
 g + annotate("text", x = 0, y = 0.75, label = "Stress=0.0741")
