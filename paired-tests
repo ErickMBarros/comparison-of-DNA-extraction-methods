@@ -1,0 +1,71 @@
+#Calculando testes pareados
+
+setwd("C:/Users/erick/Desktop")
+#amostras são as linhas, OTUs são as colunas
+x=read.table(file="otu.txt", row.names=1, sep="\t", header=T, dec=".", na.strings="NA")
+result=do.call(rbind, lapply(x, function(x) shapiro.test(x)[c("statistic", "p.value")]))
+
+tx=t(x)
+z <- merge (tx,result,0,all = T)
+rownames(z)=z[,1]
+z=z[,-1]
+
+normal=subset(z, z$p.value>0.05)
+nnormal=subset(z, z$p.value<=0.05)
+
+normal=as.matrix(normal)
+nnormal=as.matrix(nnormal)
+
+write.table (normal,"otunormaldist.txt")
+write.table (nnormal,"otu-non-normaldist.txt")
+
+#as tabelas acima foram tratadas no excel, 
+#para que a primeira metade da tabela contenha as amostras da extração por kit
+#e a segunda metade contenha as amostras da extração organica
+#OTUs nas colunas, amostras nas linhas
+
+#Paired t-test
+data=read.table(file="otu_normal.txt", row.names=1, sep="\t", header=T, dec=".", na.strings="NA") # Mudar o arquivo
+data=t(data)
+dim(data)
+#  Grupos test and control
+control=data[1:198,] 
+test=data[199:396,] 
+# loop variables
+ts<-list() # test results
+ps<-c() # p values
+stats<-c() # statistics
+# Loop
+for (i in 1:nrow(test)){
+  ts[[i]]<-t.test(control[i,], test[i,], paired = TRUE)
+  ps[i]<-ts[[i]]$p.value
+  stats[i]<-ts[[i]]$statistic
+} 
+# Data frame containing the results
+results<-data.frame(p.values=ps, statistic=stats)
+rownames(resultados)=rownames(control)
+
+write.table (results,"test-t-pareado.txt")
+
+#Wilcoxon Signed Rank Test
+data=read.table(file="otu_n-normal.txt", row.names=1, sep="\t", header=T, dec=".", na.strings="NA") # Mudar o arquivo
+data=t(data)
+dim(data)
+#  Grupos teste e controle
+control=data[1:3036,] # Linhas 1 a 1500
+test=data[3037:6072,] # Linhas 1501 a 3000
+# Variáveis para o loop
+ts<-list() # resultados dos testes
+ps<-c() # p valores
+stats<-c() # statisticas
+# Loop
+for (i in 1:nrow(test)){
+  ts[[i]]<-wilcox.test(control[i,], test[i,], paired = TRUE)
+  ps[i]<-ts[[i]]$p.value
+  stats[i]<-ts[[i]]$statistic
+} 
+# Data frame com os resultados
+resultados<-data.frame(p.values=ps, statistic=stats)
+rownames(resultados)=rownames(control)
+
+write.table (resultados,"test-wilcoxon.txt")
