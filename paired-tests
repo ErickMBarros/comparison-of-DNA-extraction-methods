@@ -1,4 +1,4 @@
-#Calculando testes pareados
+#Calculation of Paired tests
 
 setwd("C:path/to/file")
 
