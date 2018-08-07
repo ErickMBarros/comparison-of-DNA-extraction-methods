@@ -10,39 +10,100 @@ library(dismo)
 
 setwd ("C:/path/to/your/dataset")
 
-#PERMANOVA
-otu_table=read.table(file.choose(), row.names=1, sep="\t", header=T, dec=".", na.strings="NA") #otu table
-map=read.table(file.choose(), row.names=1, header=T) #environmental variables 
+otu_table=read.table(file.choose(), row.names=1, sep="\t", header=T, dec=".", na.strings="NA") #otu_table
+mapa=read.table(file.choose(), row.names=1, header=T) #environmental variables
 otu<-t(otu_table)
 
-table_merge=merge(otu, map, by.x="row.names", by.y="row.names")
+table_merge=merge(otu, mapa, by.x="row.names", by.y="row.names")
 rownames(table_merge)=table_merge[,1]
-dim(table_merge) #show thetable size
+dim(table_merge) #table size
 a=dim(table_merge)[2]
-otu_table2 = table_merge[,2:3235] 
-map2 = table_merge[,3236:a]
-map2 = as.data.frame(mapa2)
-rownames(map2)=table_merge[,1]
-colnames(map2)="metodo"
-rownames(otu_table2)==rownames(map2)
+otu_table2 = table_merge[,2:3235]
+mapa2 = table_merge[,3236:a] 
+mapa2 = as.data.frame(mapa2)
+rownames(mapa2)=table_merge[,1]
+colnames(mapa2)="metodo"
+rownames(otu_table2)==rownames(mapa2)
 
-#PERMANOVA = identifies the major responsible for data variation
-adonis(formula = otu_table2 ~ metodo, data=mapa2, permutations=10000, method="bray")
+######################################################
+#############betadispersion and PERMANOVA#############
+######################################################
+#betadispersion  must present non-significant results for a reliable PERMANOVA test
 
-#betadispersion = the data dispersion must be low to a most reliable permanova analysis
+#betadispersion
 dist_bray = vegdist(otu_table2, method="bray")
 beta_dist_site=betadisper(dist_bray, mapa2$metodo)
 permutest(beta_dist_site, control=permControl (nperm=1000))
 anova(beta_dist_site)
 plot(beta_dist_site)
+boxplot(beta_dist_site, ylim = c(0, 0.9))
 
-#NMDS
+#PERMANOVA
+adonis(formula = otu_table2 ~ trophic + site + season, data=mapa2, permutations=10000, method="bray")
+
+
+######################################################
+################nMDS plot with poligon################
+######################################################
+
 ord_otu = metaMDS(otu_table2, dist="bray", k=2, trymax=200, autotransform=FALSE, noshare=FALSE, wascores=FALSE)
 ord_otu$stress
 nmds_score = scores(ord_otu)
-map_dist = merge(mapa2, nmds_score, by.x="row.names", by.y="row.names")
+mapa_dist = merge(mapa2, nmds_score, by.x="row.names", by.y="row.names")
 table_merge2=merge(nmds_score, mapa2, by.x="row.names", by.y="row.names")
 
-method= factor(map2$method)
-g<-ggplot(mapa_dist, aes(NMDS1, NMDS2)) + geom_point(aes(color = method, shape=method), size=3) +  scale_shape_manual(values=c(16,21,17,3,8)) + scale_color_manual(values=c("darkorchid3","dodgerblue3", "darkolivegreen4", "rosybrown4", "darkgoldenrod1"))+ geom_polygon(data=table_merge2,aes(x=NMDS1,y=NMDS2,fill=metodo,group=method),alpha=0.3)
-g + annotate("text", x = 0, y = 0.75, label = "Stress=0.0741")
+#Creating the factors:
+metodo= factor(mapa2$metodo)
+
+
+#Season cor e site forma
+g<-ggplot(mapa_dist, aes(NMDS1, NMDS2)) + geom_point(aes(color = metodo, shape=metodo), size=3) +  scale_shape_manual(values=c(16,21,17,3,8)) + scale_color_manual(values=c("darkorchid3","dodgerblue3", "darkolivegreen4", "rosybrown4", "darkgoldenrod1"))+ geom_polygon(data=table_merge2,aes(x=NMDS1,y=NMDS2,fill=metodo,group=metodo),alpha=0.3)
+g + annotate("text", x = 0, y = 0.75, label = "Stress=0.0672")
+
+
+######################################################
+######nMDS plot with confidence interval ellipse######
+######################################################
+
+sol <- metaMDS(otu_table2, dist="bray", k=2, trymax=200, autotransform=FALSE, noshare=FALSE, wascores=FALSE)
+sol$stress
+NMDS = data.frame(MDS1 = sol$points[,1], MDS2 = 
+                    sol$points[,2],group=mapa2$trophic)
+NMDS.mean=aggregate(NMDS[,1:2],list(group=NMDS$group),mean)
+
+plot.new()
+
+ord<-ordiellipse(sol, mapa2$trophic, display = "sites", 
+                 kind = "sd", conf = .95, label = T)
+
+veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+
+
+df_ell <- data.frame()
+for(g in levels(NMDS$group)){
+  df_ell <- rbind(df_ell, cbind(as.data.frame(with(NMDS[NMDS$group==g,],
+                                                   veganCovEllipse(ord[[g]]$cov,ord[[g]]$center)))
+                                ,group=g))
+}
+
+
+g1<-ggplot(data = NMDS, aes(MDS1, MDS2)) + geom_point(aes(color = group, shape = group), stroke =1.25,size=2) +
+  theme_bw()+
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16,face="bold")
+  )+
+  theme(legend.text = element_text(size = 14)
+  )+
+  theme(legend.title = element_text(size = 14)
+  )+
+  geom_path(data=df_ell, aes(x=NMDS1, y=NMDS2,colour=group), size=1, linetype=1)+
+  scale_shape_manual(name = "Method", labels = c("Kit Extraction", "Organic Extraction"), values = c(21, 21)) +
+  scale_colour_manual(name = "Method", labels = c("Kit Extraction", "Organic Extraction"), values = c("red","blue"))+
+  scale_linetype_manual(name = "Method", labels = c("Kit Extraction", "Organic Extraction"), values = c(1, 1))
+
+g1 + annotate("text",x = -0.05, y = 2.23, label = "Stress=0.0741") #stress must be written according to the value provided by the nMDS itself in the 'sol$stress' step
