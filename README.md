@@ -4,7 +4,7 @@
 This article was published by the Journal of Microbiological Methods at February, 2019
 
 ## Contact
-Erick Mateus-Barros: erickmbarros@gmail.com
+Erick Mateus-Barros: erickmbarros@gmail.com  
 Hugo Sarmento: hsarmento@ufscar.br
 
 
