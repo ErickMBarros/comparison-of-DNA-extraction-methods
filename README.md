@@ -1,7 +1,7 @@
 # Scripts for article entitled:"Comparison of two widely used DNA extraction methods"
 ###### DOI: https://doi.org/10.1016/j.mimet.2019.02.005
 
-This article was published by the Journal of Microbiological Methods at February, 2019
+This article was published by the __Journal of Microbiological Methods__ at February, 2019
 
 ## Contact
 Erick Mateus-Barros: erickmbarros@gmail.com  
